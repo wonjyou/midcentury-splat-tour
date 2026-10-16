@@ -12,7 +12,7 @@
 // and non-metric captures are scaled to room size. Two default viewpoints are
 // picked in free space at eye height.
 
-import { ENCODE } from './scene.js';
+import { ENCODE } from '../format.js';
 
 const SH_C0 = 0.28209479177387814;
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));

@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fbf8f3">
   <title>Sunlit Mid-Century Room · Stayhaus</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -71,9 +72,6 @@
         <button type="button" class="round" id="autoplay" aria-label="Auto tour" aria-pressed="false"><svg viewBox="0 0 24 24" class="i-play"><path d="M8 5v14l11-7z" fill="currentColor"/></svg><svg viewBox="0 0 24 24" class="i-pause"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg></button>
       </div>
 
-      <!-- Webcam feed for the face model only; never shown. -->
-      <video id="video" class="sr-video" playsinline muted aria-hidden="true"></video>
-
       <div class="loader" id="loader">
         <div class="loader__bar"><i id="loader-fill"></i></div>
         <span id="loader-text">Placing Gaussians…</span>
@@ -136,12 +134,13 @@
 
         <section class="tech">
           <h2>About this tour</h2>
-          <p>The room is drawn entirely from 3D Gaussian splats — about <b id="splat-count">half a million</b> soft, oriented ellipsoids, each with its own colour and opacity, depth-sorted every frame and blended in your browser. The light is path-traced when the page loads: sun and lamp shadows, sky light through the glass, and one bounce of colour off the walls and rug. Glossy surfaces pick up highlights as you move. In Live view, a face model running locally finds your eyes, and the view uses an off-axis projection so the screen behaves like a pane of glass you're looking through. Turn your head and the view turns with you. Without a camera, your pointer stands in for your head.</p>
-          <p class="muted">Keyboard: ← → to move between spots, <kbd>R</kbd> to recenter.</p>
+          <p>The room is drawn entirely from 3D Gaussian splats — about <b id="splat-count">half a million</b> soft, oriented ellipsoids, each with its own colour and opacity, depth-sorted every frame and blended in your browser. The light is path-traced when the page loads: sun and lamp shadows, sky light through the glass, and one bounce of colour off the walls and rug. Glossy surfaces pick up highlights as you move. In Live view, a face model running locally finds your eyes, and the view uses an off-axis projection so the screen behaves like a pane of glass you're looking through. Turn your head and the view turns with you. Without it, your pointer stands in for your head, and on a phone you can drag sideways across the room to look around.</p>
+          <p class="muted hint-pointer">Keyboard: ← → to move between spots, <kbd>R</kbd> to recenter.</p>
+          <p class="muted hint-touch">On a phone, Live view uses the front camera, or the phone's motion if there's no camera.</p>
         </section>
       </div>
 
-      <aside class="booking">
+      <aside class="booking" id="booking">
         <div class="booking__card">
           <div class="booking__price"><strong>$186</strong> <span class="muted">night</span></div>
           <div class="booking__fields">
@@ -166,6 +165,11 @@
     <p>Stayhaus is a fictional listing made to demo Gaussian-splat room tours with Live view.</p>
   </footer>
 
-  <script type="module" src="js/main.js"></script>
+  <div class="reserve-bar" id="reserve-bar">
+    <div class="reserve-bar__price"><strong>$186</strong> <span class="muted">night</span><span class="reserve-bar__dates">Nov 14 – 17 · 2 guests</span></div>
+    <button type="button" class="primary" id="reserve-bar-btn">Reserve</button>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>

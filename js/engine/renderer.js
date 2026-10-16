@@ -7,22 +7,7 @@
 // head moves. Splats are composited front-to-back into a half-float buffer,
 // then bloom, ACES tone mapping, vignette and grain finish the frame.
 
-import { ENCODE } from './scene.js';
-
-const MATERIALS = [
-  // specular strength, shininess, metallic
-  [0, 1, 0],        // matte
-  [0.5, 50, 0],     // satin (oak floor, frames)
-  [0.75, 110, 0],   // polished walnut
-  [0.45, 26, 0],    // leather
-  [1.0, 70, 1],     // brass
-  [1.0, 140, 1],    // aluminium
-  [0.8, 220, 0],    // ceramic glaze
-  [0, 1, 0],        // fabric
-  [0.6, 120, 0],    // vinyl
-  [1.0, 900, 1],    // mirror
-  [0.12, 10, 0],    // eggshell paint
-];
+import { ENCODE, MATERIALS } from './format.js';
 
 const SPLAT_VS = `#version 300 es
 precision highp float;
@@ -217,7 +202,12 @@ function program(gl, vs, fs) {
 }
 
 export class SplatRenderer {
-  constructor(canvas) {
+  static supported() {
+    try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; }
+  }
+
+  // options.bloomPasses: blur iterations for bloom (0 turns bloom off).
+  constructor(canvas, { bloomPasses = 2 } = {}) {
     const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, powerPreference: 'high-performance' });
     if (!gl) throw new Error('WebGL2 is not available in this browser.');
     this.gl = gl;
@@ -252,6 +242,8 @@ export class SplatRenderer {
     this.targets = null;
     this.exposure = 1.0;
     this.background = [0.012, 0.008, 0.006];
+    this.bloomRadii = [1, 2.5, 4].slice(0, bloomPasses);
+    this.setLights(null);
   }
 
   makeTarget(w, h) {
@@ -308,7 +300,13 @@ export class SplatRenderer {
     this.setOrder(order);
   }
 
+  // Lights only drive view-dependent specular; baked lighting lives in the
+  // splat colours. Pass null for a scene without glossy materials.
   setLights(L) {
+    if (!L) {
+      this.lights = { sunDir: [0, 1, 0], sunCol: [0, 0, 0], lampPos: [0, 0, 0, 0, 0, 0], lampCol: [0, 0, 0, 0, 0, 0], winPos: [0, 0, 0], winCol: [0, 0, 0] };
+      return;
+    }
     this.lights = {
       sunDir: L.sunDir,
       sunCol: L.sunColor.map((c) => c * L.sunE),
@@ -323,6 +321,10 @@ export class SplatRenderer {
     const gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.indexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, order, gl.DYNAMIC_DRAW);
+  }
+
+  dispose() {
+    this.gl.getExtension('WEBGL_lose_context')?.loseContext();
   }
 
   draw({ view, proj, eye, reveal, revealOrigin, time }) {
@@ -378,8 +380,8 @@ export class SplatRenderer {
       setup?.(prog.u);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     };
-    pass(this.bright, T.a, T.scene.tex, (u) => gl.uniform1f(u.u_exposure, this.exposure));
-    for (const r of [1, 2.5]) {
+    pass(this.bright, T.a, T.scene.tex, (u) => gl.uniform1f(u.u_exposure, this.bloomRadii.length ? this.exposure : 0));
+    for (const r of this.bloomRadii) {
       pass(this.blur, T.b, T.a.tex, (u) => gl.uniform2f(u.u_dir, r, 0));
       pass(this.blur, T.a, T.b.tex, (u) => gl.uniform2f(u.u_dir, 0, r));
     }

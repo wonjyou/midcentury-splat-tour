@@ -60,6 +60,7 @@ h1 { margin: 0; font-size: clamp(26px, 3.2vw, 36px); line-height: 1.12; }
   position: relative;
   aspect-ratio: 16 / 9;
   max-height: calc(100vh - 170px);
+  max-height: calc(100svh - 170px);
   min-height: 360px;
   width: 100%;
   border-radius: var(--radius);
@@ -89,8 +90,6 @@ h1 { margin: 0; font-size: clamp(26px, 3.2vw, 36px); line-height: 1.12; }
   white-space: nowrap;
 }
 .pill b { font-weight: 700; }
-.pill--live i { width: 8px; height: 8px; border-radius: 50%; background: #e0493b; box-shadow: 0 0 0 0 rgba(224, 73, 59, .6); animation: pulse 2s infinite; }
-@keyframes pulse { 70% { box-shadow: 0 0 0 7px rgba(224, 73, 59, 0); } 100% { box-shadow: 0 0 0 0 rgba(224, 73, 59, 0); } }
 .pill--btn { background: var(--ink); color: #fff; }
 button.pill { cursor: pointer; }
 button.pill[aria-pressed="true"] { background: var(--ink); color: #fff; }
@@ -102,10 +101,6 @@ button.pill[aria-pressed="true"] { background: var(--ink); color: #fff; }
 }
 .viewer.is-dropping .dropzone { opacity: 1; }
 .pill--btn:hover { background: #000; }
-#mode-icon { width: 14px; height: 14px; display: inline-grid; place-items: center; }
-#mode-icon svg { width: 14px; height: 14px; }
-#mode-pill[data-mode="head"] { color: var(--teal); }
-#mode-pill[data-mode="searching"] { color: #9a6a12; }
 
 .stops {
   display: flex; gap: 6px; padding: 5px; border-radius: 999px;
@@ -148,10 +143,7 @@ button.pill[aria-pressed="true"] { background: var(--ink); color: #fff; }
 .stop-caption.is-changing { opacity: 0; transform: translateY(6px); }
 .stop-caption strong { font-family: "Fraunces", serif; font-size: 24px; font-weight: 600; line-height: 1.15; }
 .stop-caption span { font-size: 14px; opacity: .92; }
-
-/* The webcam feeds the face model but is never shown. It stays rendered
-   (not display:none) so every browser keeps decoding frames. */
-.sr-video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; left: 0; top: 0; }
+.stop-caption span:empty { display: none; }
 
 .primary {
   border: 0; border-radius: 12px; padding: 13px 18px; font-weight: 600; font-size: 16px;
@@ -231,30 +223,99 @@ kbd { font: 600 12px "DM Sans", sans-serif; border: 1px solid var(--line); borde
 .footer { border-top: 1px solid var(--line); padding: 24px; text-align: center; color: var(--muted); font-size: 13px; }
 .footer p { margin: 0; }
 
-/* ---------- small screens */
+/* ---------- mobile reserve bar (shown on narrow screens) */
+.reserve-bar { display: none; }
+.hint-touch { display: none; }
+
+/* ---------- touch devices: bigger targets, touch-specific hints */
+@media (pointer: coarse) {
+  .round { width: 44px; height: 44px; }
+  .stop { padding: 11px 15px; font-size: 14px; }
+  .pill { min-height: 38px; padding: 9px 14px; }
+  .ghost { min-height: 40px; }
+  .hint-pointer { display: none; }
+  .hint-touch { display: block; }
+}
+@media (hover: none) {
+  .stop:hover { color: var(--muted); background: none; }
+  .stop[aria-selected="true"]:hover { background: var(--ink); color: #fff; }
+  .round:hover, .pill--cam:hover { background: rgba(255, 252, 247, 0.92); }
+}
+
+/* ---------- tablets and narrow windows */
 @media (max-width: 900px) {
-  .content { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .content { grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 28px; }
   .booking__card { position: static; margin-top: 8px; }
   .topbar__right a { display: none; }
+  .viewer { aspect-ratio: 4 / 3; max-height: calc(100vh - 190px); max-height: calc(100svh - 190px); }
+
+  .reserve-bar {
+    position: fixed; z-index: 30; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 12px max(16px, env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(10px);
+    border-top: 1px solid var(--line); box-shadow: 0 -6px 20px rgba(40, 28, 16, 0.08);
+    transform: translateY(110%); transition: transform .3s ease;
+  }
+  .reserve-bar__price { display: grid; line-height: 1.25; font-size: 14px; }
+  .reserve-bar__price strong { font-size: 18px; }
+  .reserve-bar__dates { font-size: 13px; text-decoration: underline; }
+  .reserve-bar .primary { padding: 12px 26px; }
+  /* Hidden by default; slides in once the room is scrolled away, out again over the booking card. */
+  .show-reserve-bar .reserve-bar { transform: none; }
+  .footer { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 }
+
+/* ---------- phones */
 @media (max-width: 640px) {
   .topbar__inner { padding: 10px 16px; gap: 12px; }
   .brand span { display: none; }
   .search { margin: 0; flex: 1; justify-content: space-between; min-width: 0; }
   .search__seg:nth-child(2), .search__seg:nth-child(3) { display: none; }
   .search__seg { border-right: 0; overflow: hidden; text-overflow: ellipsis; }
-  .listing { padding: 16px 16px 48px; }
-  .title-row { flex-direction: column; align-items: flex-start; gap: 6px; }
-  .title-actions { align-self: flex-end; margin-top: -4px; }
-  .viewer { aspect-ratio: 4 / 5; min-height: 0; border-radius: 14px; }
-  .hud--tl { top: 12px; left: 12px; flex-wrap: wrap; max-width: calc(100% - 110px); }
+  .listing { padding: 16px 16px 40px; }
+  .title-row { flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 14px; }
+  h1 { font-size: 24px; }
+  .title-actions { align-self: flex-end; margin: -4px -8px 0 0; }
+
+  /* The room runs edge to edge. */
+  .viewer {
+    width: calc(100% + 32px); margin-inline: -16px;
+    aspect-ratio: 4 / 5; max-height: calc(100vh - 150px); max-height: calc(100svh - 150px); min-height: 320px;
+    border-radius: 0;
+  }
+  .hud--tl { top: 12px; left: 12px; flex-wrap: wrap; max-width: calc(100% - 150px); }
   .hud--tr { top: 12px; right: 12px; }
-  .hud--bottom { bottom: 12px; width: calc(100% - 24px); max-width: none; }
+  .hud--bottom { bottom: 12px; width: calc(100% - 24px); max-width: none; gap: 6px; }
   .hud--bottom .stops { flex: 1; min-width: 0; }
   #prev, #next { display: none; }
-  .stop-caption { bottom: 66px; left: 12px; }
-  .stop-caption strong { font-size: 20px; }
-  .favorite { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stop-caption { bottom: 72px; left: 14px; right: 14px; max-width: none; }
+  .stop-caption strong { font-size: 21px; }
+  .stop-caption span { font-size: 13.5px; }
+  .toast { top: 62px; font-size: 13.5px; }
+  .favorite { grid-template-columns: 1fr 1fr; gap: 12px; padding: 16px; }
   .favorite p { grid-column: 1 / -1; grid-row: 2; }
   .amenities ul { grid-template-columns: 1fr; }
+  .details > section { padding: 24px 0; }
+}
+
+/* ---------- phones held sideways: the room fills the screen height */
+@media (orientation: landscape) and (max-height: 540px) {
+  .topbar__inner { padding-block: 8px; }
+  .listing { padding-top: 10px; }
+  /* Sideways is for looking at the room: the title stays for screen readers only. */
+  .title-row { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .viewer {
+    aspect-ratio: auto; height: calc(100vh - 74px); height: calc(100svh - 74px);
+    max-height: none; min-height: 0;
+    width: 100%; margin-inline: 0; border-radius: 12px;
+  }
+  .stop-caption { bottom: 64px; }
+  .stop-caption span { display: none; }
+  .hud--bottom { bottom: 10px; }
+  .reserve-bar { padding-block: 8px calc(8px + env(safe-area-inset-bottom)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; animation-duration: 0s !important; scroll-behavior: auto !important; }
 }

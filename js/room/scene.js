@@ -10,6 +10,9 @@
 //
 // Units are metres. y is up, the back wall is at z = ZB, the window wall at x = XL.
 
+import { MAT, encodeRadiance, packNormal, packExtra } from '../engine/format.js';
+export { MAT };
+
 export const ROOM = { XL: -3.2, XR: 3.2, ZB: -4.0, ZF: 4.2, H: 2.75 };
 const { XL, XR, ZB, ZF, H } = ROOM;
 const WIN = { z0: -3.5, z1: 1.7, y0: 0.3, y1: 2.5, panes: 4, transom: 2.06 };
@@ -27,11 +30,13 @@ export const LIGHTS = {
   window: { p: [XL, 1.4, (WIN.z0 + WIN.z1) / 2], c: [1.0, 0.96, 0.9] },
 };
 
-// Material ids → specular response in the renderer (see MATERIALS there).
-export const MAT = { matte: 0, satin: 1, polished: 2, leather: 3, brass: 4, alu: 5, glaze: 6, fabric: 7, vinyl: 8, mirror: 9, paint: 10 };
-
-// Colour encoding: linear radiance in [0, RANGE], stored with a 1/GAMMA curve.
-export const ENCODE = { RANGE: 6, GAMMA: 2.4 };
+// Build quality. 'low' widens splat spacing (about 40% fewer splats) and traces
+// fewer bounce rays, for phones and small GPUs.
+const QUALITY = {
+  high: { spacing: 1, raysU: 5, raysV: 4 },
+  low: { spacing: 1.3, raysU: 3, raysV: 3 },
+};
+let Q = QUALITY.high;
 
 // ---------------------------------------------------------------- math
 function norm(a) { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; }
@@ -147,6 +152,7 @@ function put(p, a1, a2, a3, s1, s2, s3, c, n, opt) {
 
 // ---------------------------------------------------------------- primitives
 function rect(o, u, v, ul, vl, sp, fn, opt = {}) {
+  sp = Array.isArray(sp) ? sp.map((x) => x * Q.spacing) : sp * Q.spacing;
   const n = opt.normal || norm(cross(u, v));
   const [spu, spv] = Array.isArray(sp) ? sp : [sp, sp];
   const nu = Math.max(1, Math.round(ul / spu)), nv = Math.max(1, Math.round(vl / spv));
@@ -166,6 +172,7 @@ function rect(o, u, v, ul, vl, sp, fn, opt = {}) {
 // Box with rounded edges (radius r) around centre c, unit axes ax[3], half extents h[3].
 // Samples are laid on the box faces, then projected onto the rounded surface.
 function rbox(c, ax, h, r, fn, sp, opt = {}) {
+  sp *= Q.spacing;
   const names = ['x', 'y', 'z'];
   const inner = h.map((v) => Math.max(v - r, 0));
   for (let k = 0; k < 3; k++) {
@@ -201,6 +208,7 @@ function rbox(c, ax, h, r, fn, sp, opt = {}) {
 const obox = (c, ax, h, fn, sp, opt = {}) => rbox(c, ax, h, 0, fn, sp, opt);
 
 function disk(c, n, r, sp, fn, opt = {}) {
+  sp *= Q.spacing;
   const [e1, e2] = basis(n);
   const nr = Math.max(1, Math.round(r / sp));
   const at = (p, t, rad, s1, s2) => {
@@ -221,6 +229,7 @@ function disk(c, n, r, sp, fn, opt = {}) {
 }
 
 function cylinder(base, axis, h, r0, r1, sp, fn, opt = {}) {
+  sp *= Q.spacing;
   const [e1, e2] = basis(axis);
   const nh = Math.max(1, Math.round(h / sp));
   for (let i = 0; i < nh; i++) {
@@ -240,6 +249,7 @@ function cylinder(base, axis, h, r0, r1, sp, fn, opt = {}) {
 }
 
 function ellipsoid(c, radii, sp, fn, opt = {}) {
+  sp *= Q.spacing;
   const ax = opt.axes || AX;
   const [a, b, cc] = radii, P = 1.6075;
   const area = 4 * Math.PI * Math.pow((Math.pow(a * b, P) + Math.pow(a * cc, P) + Math.pow(b * cc, P)) / 3, 1 / P);
@@ -840,7 +850,7 @@ function bake(progress) {
   }
 
   // Pass 2: gather sky + first bounce with stratified cosine-weighted rays.
-  const RAYS_U = 5, RAYS_V = 4, RAYS = RAYS_U * RAYS_V;
+  const RAYS_U = Q.raysU, RAYS_V = Q.raysV, RAYS = RAYS_U * RAYS_V;
   const AMB = [0.1, 0.095, 0.085]; // stands in for the second and later bounces
   const ind = new Float32Array(n * 3);
   const skyVis = new Float32Array(n);
@@ -905,8 +915,6 @@ function bake(progress) {
   const out = new Uint8Array(n * 4);
   const normals = new Uint32Array(n);
   const extra = new Uint32Array(n);
-  const { RANGE, GAMMA } = ENCODE;
-  const enc = (x) => clamp(Math.round(Math.pow(clamp(x / RANGE, 0, 1), 1 / GAMMA) * 255), 0, 255);
   for (let i = 0; i < n; i++) {
     let R, G, B;
     if (emi[i] > 0) {
@@ -928,15 +936,15 @@ function bake(progress) {
       G = lin[i * 3 + 1] * (direct[i * 3 + 1] + ig) * k;
       B = lin[i * 3 + 2] * (direct[i * 3 + 2] + ib) * k;
     }
-    out[i * 4] = enc(R); out[i * 4 + 1] = enc(G); out[i * 4 + 2] = enc(B); out[i * 4 + 3] = S.alpha[i];
-    const q = (v) => clamp(Math.round((v * 0.5 + 0.5) * 1023), 0, 1023);
-    normals[i] = (q(nrm[i * 3]) | (q(nrm[i * 3 + 1]) << 10) | (q(nrm[i * 3 + 2]) << 20)) >>> 0;
-    extra[i] = (S.mat[i] | (Math.round(sunVis[i] * 255) << 8) | (Math.round(clamp(skyVis[i] * 3, 0, 1) * 255) << 16)) >>> 0;
+    out[i * 4] = encodeRadiance(R); out[i * 4 + 1] = encodeRadiance(G); out[i * 4 + 2] = encodeRadiance(B); out[i * 4 + 3] = S.alpha[i];
+    normals[i] = packNormal(nrm[i * 3], nrm[i * 3 + 1], nrm[i * 3 + 2]);
+    extra[i] = packExtra(S.mat[i], sunVis[i], skyVis[i] * 3);
   }
   return { colors: out, normals, extra };
 }
 
-export function buildRoom(progress) {
+export function buildRoom(progress, { quality = 'high' } = {}) {
+  Q = QUALITY[quality] || QUALITY.high;
   S = new Store(400000);
   seed = 1337;
   progress?.(0.02, 'Placing Gaussians');
