@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sunlit Mid-Century Room · Stayhaus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="#" aria-label="Stayhaus home">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 15 16 5l12 10v12H19v-7h-6v7H4z" fill="currentColor"/><circle cx="23" cy="9" r="3" fill="var(--sun)"/></svg>
+        <span>stayhaus</span>
+      </a>
+      <button class="search" type="button">
+        <span class="search__seg">Palm Springs</span>
+        <span class="search__seg">Nov 14 – 17</span>
+        <span class="search__seg search__seg--muted">2 guests</span>
+        <span class="search__go" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m16 16 4.5 4.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>
+      </button>
+      <nav class="topbar__right">
+        <a href="#">Host your home</a>
+        <span class="avatar" aria-hidden="true">W</span>
+      </nav>
+    </div>
+  </header>
+
+  <main class="listing">
+    <div class="title-row">
+      <div>
+        <p class="eyebrow">Live 3D room tour</p>
+        <h1>Sunlit 1958 mid-century living room, steps from the pool</h1>
+      </div>
+      <div class="title-actions">
+        <button type="button" class="ghost"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Share</button>
+        <button type="button" class="ghost" id="save"><svg viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>Save</span></button>
+      </div>
+    </div>
+
+    <section class="viewer" id="viewer" aria-label="Interactive 3D tour of the living room">
+      <canvas id="splats"></canvas>
+
+      <div class="hud hud--tl">
+        <button type="button" class="pill" id="cap-flip" aria-pressed="false" title="Turn the capture upside down" hidden>Flip</button>
+        <button type="button" class="pill" id="cap-turn" title="Rotate the capture a quarter turn" hidden>Turn 90°</button>
+        <button type="button" class="pill pill--btn" id="cap-room" title="Back to the furnished room" hidden>Back to the room</button>
+      </div>
+      <div class="dropzone" aria-hidden="true"><span>Drop a .ply or .splat capture</span></div>
+
+      <div class="hud hud--tr">
+        <button type="button" class="pill pill--btn" id="recenter" hidden>Recenter</button>
+        <button type="button" class="pill pill--cam" id="cam-toggle" aria-pressed="false" title="Live view: the room moves as you move. Uses your camera; video never leaves this device.">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>
+          <span id="cam-label">Live view</span>
+        </button>
+      </div>
+
+      <div class="stop-caption" id="caption" aria-live="polite">
+        <strong id="caption-title">Living room</strong>
+        <span id="caption-blurb"></span>
+      </div>
+
+      <div class="hud hud--bottom">
+        <button type="button" class="round" id="prev" aria-label="Previous spot"><svg viewBox="0 0 24 24"><path d="m14 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="stops" id="stops" role="tablist" aria-label="Tour stops"></div>
+        <button type="button" class="round" id="next" aria-label="Next spot"><svg viewBox="0 0 24 24"><path d="m10 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button type="button" class="round" id="autoplay" aria-label="Auto tour" aria-pressed="false"><svg viewBox="0 0 24 24" class="i-play"><path d="M8 5v14l11-7z" fill="currentColor"/></svg><svg viewBox="0 0 24 24" class="i-pause"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg></button>
+      </div>
+
+      <!-- Webcam feed for the face model only; never shown. -->
+      <video id="video" class="sr-video" playsinline muted aria-hidden="true"></video>
+
+      <div class="loader" id="loader">
+        <div class="loader__bar"><i id="loader-fill"></i></div>
+        <span id="loader-text">Placing Gaussians…</span>
+      </div>
+      <div class="toast" id="toast" role="status" hidden></div>
+    </section>
+
+    <div class="content">
+      <div class="details">
+        <section class="summary">
+          <h2>Entire guest suite in Palm Springs, California</h2>
+          <p class="muted">2 guests · 1 bedroom · 1 queen bed · 1 bath</p>
+          <div class="favorite">
+            <div class="favorite__badge"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" fill="currentColor"/></svg>Guest favorite</div>
+            <p>One of the most loved homes on Stayhaus, according to guests</p>
+            <div class="favorite__stat"><strong>4.97</strong><span>★★★★★</span></div>
+            <div class="favorite__stat"><strong>214</strong><span>Reviews</span></div>
+          </div>
+        </section>
+
+        <section class="host">
+          <span class="host__avatar" aria-hidden="true">M</span>
+          <div>
+            <strong>Hosted by Margot</strong>
+            <p class="muted">Superhost · 9 years hosting · restores mid-century furniture</p>
+          </div>
+        </section>
+
+        <section class="highlights">
+          <div class="hl">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <div><strong>Afternoon sun, all year</strong><p class="muted">Floor-to-ceiling west glass frames the San Jacinto range.</p></div>
+          </div>
+          <div class="hl">
+            <svg viewBox="0 0 24 24"><path d="M3 15c2 0 2-1.5 4.5-1.5S9.5 15 12 15s2.5-1.5 4.5-1.5S19 15 21 15M3 19c2 0 2-1.5 4.5-1.5S9.5 19 12 19s2.5-1.5 4.5-1.5S19 19 21 19M8 12V5a2 2 0 0 1 4 0M14 12V5a2 2 0 0 1 4 0M8 8h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <div><strong>Saltwater pool, shared with one other suite</strong><p class="muted">Heated October through April.</p></div>
+          </div>
+          <div class="hl">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.2" fill="currentColor"/><path d="M12 6.5a5.5 5.5 0 0 1 5.5 5.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <div><strong>Records and a turntable</strong><p class="muted">Two shelves of jazz, bossa nova and exotica.</p></div>
+          </div>
+        </section>
+
+        <section class="about">
+          <p>Built in 1958 by a student of the desert-modern school, this suite keeps its original walnut slat wall, post-and-beam ceiling and terrazzo-edged pool deck. We furnished it the way it might have looked the year it opened: a long low sofa in teal wool, a molded-plywood lounger with its ottoman, a caned walnut credenza, and a brass arc lamp that throws a warm pool of light by evening.</p>
+          <p>Walk to the Uptown Design District in twelve minutes, or don't leave at all. The west window catches the last light on the mountains around five.</p>
+        </section>
+
+        <section class="amenities">
+          <h2>What this place offers</h2>
+          <ul>
+            <li><svg viewBox="0 0 24 24"><path d="M3 9.5a13 13 0 0 1 18 0M6 13a8.5 8.5 0 0 1 12 0M9.2 16.4a4 4 0 0 1 5.6 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="19.5" r="1.3" fill="currentColor"/></svg>Fast wifi – 400 Mbps</li>
+            <li><svg viewBox="0 0 24 24"><path d="M3 15c2 0 2-1.5 4.5-1.5S9.5 15 12 15s2.5-1.5 4.5-1.5S19 15 21 15M3 19c2 0 2-1.5 4.5-1.5S9.5 19 12 19s2.5-1.5 4.5-1.5S19 19 21 19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Shared pool</li>
+            <li><svg viewBox="0 0 24 24"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Central air conditioning</li>
+            <li><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>Record player</li>
+            <li><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 7h6M9 11h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>Kitchenette with espresso</li>
+            <li><svg viewBox="0 0 24 24"><path d="M3 17h18M5 17V9l7-4 7 4v8M10 17v-5h4v5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>Free parking on premises</li>
+          </ul>
+        </section>
+
+        <section class="tech">
+          <h2>About this tour</h2>
+          <p>The room is drawn entirely from 3D Gaussian splats — about <b id="splat-count">half a million</b> soft, oriented ellipsoids, each with its own colour and opacity, depth-sorted every frame and blended in your browser. The light is path-traced when the page loads: sun and lamp shadows, sky light through the glass, and one bounce of colour off the walls and rug. Glossy surfaces pick up highlights as you move. In Live view, a face model running locally finds your eyes, and the view uses an off-axis projection so the screen behaves like a pane of glass you're looking through. Turn your head and the view turns with you. Without a camera, your pointer stands in for your head.</p>
+          <p class="muted">Keyboard: ← → to move between spots, <kbd>R</kbd> to recenter.</p>
+        </section>
+      </div>
+
+      <aside class="booking">
+        <div class="booking__card">
+          <div class="booking__price"><strong>$186</strong> <span class="muted">night</span></div>
+          <div class="booking__fields">
+            <label><span>Check-in</span><input type="text" value="11/14/2026" readonly></label>
+            <label><span>Checkout</span><input type="text" value="11/17/2026" readonly></label>
+            <label class="wide"><span>Guests</span><select><option>2 guests</option><option>1 guest</option></select></label>
+          </div>
+          <button type="button" class="primary primary--wide" id="reserve">Reserve</button>
+          <p class="center muted small">You won't be charged yet</p>
+          <dl class="booking__lines">
+            <div><dt>$186 × 3 nights</dt><dd>$558</dd></div>
+            <div><dt>Cleaning fee</dt><dd>$45</dd></div>
+            <div><dt>Service fee</dt><dd>$71</dd></div>
+            <div class="total"><dt>Total before taxes</dt><dd>$674</dd></div>
+          </dl>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p>Stayhaus is a fictional listing made to demo Gaussian-splat room tours with Live view.</p>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
